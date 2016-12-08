@@ -49,6 +49,10 @@ class Teamwork(object):
         result = self.get('projects.json')
         return result.get('projects')
 
+    def get_people(self):
+        result = self.get('people.json')
+        return result.get('people')
+
     def get_project_times(self, project_id, user_id=None, start_date=None,
                           end_date=None):
         """
@@ -81,7 +85,7 @@ class Teamwork(object):
         return result.get('time-entries')
 
     def save_project_time_entry(self, project_id, entry_date, duration,
-                                user_id, description, start_time):
+                                user_id, description, start_time, is_billable=True):
         """
         :param: project_id: Project ID
         :param: date: datetime.date Date of time entry
@@ -89,8 +93,15 @@ class Teamwork(object):
         :param: user_id: Integer Id of person
         :param: description: String Id of person
         :param: start_time: datetime.timedelta
+        :param: is_billable: Boolean
         """
         duration_hours, duration_minutes = timedelta_to_hours_minutes(duration)
+
+        if is_billable:
+            is_billable = "1"
+        else:
+            is_billable = "0"
+
 
         data = {
                     "time-entry": {
@@ -100,7 +111,7 @@ class Teamwork(object):
                         "time": time_to_hhmm(start_time),
                         "hours": duration_hours,
                         "minutes": duration_minutes,
-                        "isbillable": "1"
+                        "isbillable": is_billable 
                     }
                 }
         result = self.post(
@@ -123,6 +134,45 @@ class Teamwork(object):
 
     def get_project_user_times(self, project_id, user_id):
         pass
+    
+    def get_project_tasks(self, project_id):
+        result = self.get('projects/%i/tasks.json' % project_id)
+        return result.get('todo-items')
+
+    def save_task_time_entry(self, task_id, entry_date, duration,
+                                user_id, description, start_time, is_billable=True):
+        """
+        :param: project_id: Project ID
+        :param: date: datetime.date Date of time entry
+        :param: duration: datetime.timedelta Duration
+        :param: user_id: Integer Id of person
+        :param: description: String Id of person
+        :param: start_time: datetime.timedelta
+        :param: is_billable: Boolean
+        """
+        duration_hours, duration_minutes = timedelta_to_hours_minutes(duration)
+
+        if is_billable:
+            is_billable = "1"
+        else:
+            is_billable = "0"
+
+
+        data = {
+                    "time-entry": {
+                        "description": description,
+                        "person-id": user_id,
+                        "date": entry_date.strftime('%Y%m%d'),
+                        "time": time_to_hhmm(start_time),
+                        "hours": duration_hours,
+                        "minutes": duration_minutes,
+                        "isbillable": is_billable 
+                    }
+                }
+        result = self.post(
+            '/tasks/%i/time_entries.json' % task_id,
+            data=json.dumps(data))
+        return result
 
 
 def timedelta_to_hours_minutes(td):
